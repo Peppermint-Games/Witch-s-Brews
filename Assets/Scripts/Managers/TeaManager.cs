@@ -15,7 +15,8 @@ public class Tea{
   public string teaName;
   [TextArea]
   public string description;
-  public int id;
+  public int id, growTime;
   public int[] ingredients = new int[4];
   public vibe teaVibe;
+  public timeScale scale = timeScale.minute;
 }
