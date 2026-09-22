@@ -6,11 +6,11 @@ public class TeaDatabase{
       switch(id){
         case 0:
           newTea.teaName = "English Breakfast";
-          newTea.ingredients[0] = 3;
-          newTea.ingredients[1] = 4;
-          newTea.ingredients[2] = 5;
-          newTea.ingredients[3] = 6;
-          newTea.teaVibe = vibe.cozy;
+          newTea.ingredients[0] = 2;
+          newTea.ingredients[1] = 3;
+          newTea.ingredients[2] = 4;
+          newTea.ingredients[3] = 5;
+          newTea.teaVibe = vibe.energetic;
             break;
       }
   }
