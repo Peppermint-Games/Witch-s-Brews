@@ -1,9 +1,9 @@
 ﻿public static class GardenSimulation
 {
-    public static void Update(saveData save)
+    public static void UpdateThis(saveData save)
     {
-        if (save == null || save.data == null || save.data.plants == null)
-            foreach (var item in save.data.plants)
+        if (save == null || save.data == null || save.data.garden.plants == null)
+            foreach (var item in save.data.garden.plants)
                 UpdatePlant(item, save.tickCount);
     }
     static void UpdatePlant(Plantdat plant, long currentTick)

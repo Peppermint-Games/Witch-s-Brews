@@ -11,7 +11,6 @@ public class GameManager : MonoBehaviour
     public float TicksPerMinute => TicksPerHour / 60f;
     public float TicksPerSecond => TicksPerMinute / 60;
     public saveData save;
-    public long totalTicks;
     private void Awake()
     {
         if (I != null && I != this)
@@ -22,22 +21,19 @@ public class GameManager : MonoBehaviour
         I = this;
         DontDestroyOnLoad(gameObject);
         Load();
-        InvokeRepeating("tick", 0, (1f / tickRate));
+        InvokeRepeating(nameof(Tick), 0, (1f / tickRate));
     }
-    void tick()
+    void Tick()
     {
         save.tickCount++;
+        TeaSimulation.UpdateThis(save);
         int currentDay = (int)(save.tickCount / (float)ticksPerDay);
         if (currentDay > save.currentDay)
         {
             save.currentDay = currentDay;
-            UpdateSimulations();
+            GardenSimulation.UpdateThis(save);
             Save();
         }
-    }
-    void UpdateSimulations()
-    {
-        GardenSimulation.Update(save);
     }
     public long GetTicks(float amount, timeScale scale)
     {

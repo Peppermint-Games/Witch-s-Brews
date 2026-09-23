@@ -16,8 +16,8 @@ public class GardenManager : MonoBehaviour
     }
     private void Start()
     {
-        GardenSimulation.Update(GameManager.I.save);
-        thisData = GameManager.I.save.data;
+        GardenSimulation.UpdateThis(GameManager.I.save);
+        thisData = GameManager.I.save.data.garden;
         BuildGarden();
     }
     void BuildDatabase()
