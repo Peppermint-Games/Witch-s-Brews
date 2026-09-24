@@ -83,7 +83,8 @@ public class TeaShopManager : MonoBehaviour
         tea.id = -1;
         tea.isPremade = false;
         tea.ingredients = plants.Select(x => x.id).OrderBy(x => x).ToList();
-        tea.teaVibe = CalculateVibe(plants);
+        tea.vibes = CalculateVibes(plants);
+        tea.teaVibe = tea.vibes.OrderByDescending(x => x.value).First().type;
         tea.teaName = teaName.text;
         tea.growTime = Mathf.RoundToInt((float)plants.Average(x => x.growTime));
         tea.scale = timeScale.minute;
@@ -122,16 +123,18 @@ public class TeaShopManager : MonoBehaviour
     {
         return new Teabag { id = saved.id, teaName = saved.customName, ingredients = new List<int>(saved.plantIDs), teaVibe = saved.teaVibe, growTime = saved.growTime, scale = timeScale.minute, isPremade = false };
     }
-    vibe CalculateVibe(List<PlantData> plants)
+    List<VibeValue> CalculateVibes(List<PlantData> plants)
     {
-        Dictionary<vibe, int> scores = new Dictionary<vibe, int>();
+        List<VibeValue> results = new List<VibeValue>();
         foreach (PlantData plant in plants)
         {
-            if (!scores.ContainsKey(plant.vibe))
-                scores.Add(plant.vibe, 0);
-            scores[plant.vibe] += plant.value;
+            VibeValue existing = results.FirstOrDefault(x => x.type == plant.vibe);
+            if (existing != null)
+                existing.value += plant.value;
+            else
+                results.Add(new VibeValue { type = plant.vibe, value = plant.value });
         }
-        return scores.OrderByDescending(x => x.Value).First().Key;
+        return results;
     }
     public Teabag GetTeaByID(int id)
     {
@@ -145,6 +148,16 @@ public class TeaShopManager : MonoBehaviour
             return ConvertSavedRecipe(saved);
         return null;
     }
+    public void ServeTea(Customer customer, Teabag tea)
+    {
+        if (customer == null || tea == null)
+            return;
+        float score = TeaScoring.ScoreTea(tea, customer.order);
+        int payment = TeaScoring.CalculatePayment(customer.order, score);
+        GameManager.I.save.gold += payment;
+        GameManager.I.Save();
+        CustomerManager.I.GenerateCustomer();
+    }
 }
 public class Teabag
 {
@@ -154,9 +167,15 @@ public class Teabag
     public int id, growTime;
     public List<int> ingredients = new List<int>(4);
     public vibe teaVibe;
+    public List<VibeValue> vibes = new List<VibeValue>();
     public timeScale scale = timeScale.minute;
     public Sprite icon;
     public bool isPremade = true;
+    public int GetVibeValue(vibe type)
+    {
+        VibeValue result = vibes.FirstOrDefault(x => x.type == type);
+        return result != null ? result.value : 0;
+    }
 }
 public static class TeaRecipeUtility
 {
@@ -167,5 +186,40 @@ public static class TeaRecipeUtility
     public static string GetRecipeKey(IEnumerable<PlantData> plants)
     {
         return GetRecipeKey(plants.Select(x => x.id));
+    }
+}
+public static class TeaScoring
+{
+    public static float ScoreTea(Teabag tea, CustomerOrder order)
+    {
+        if (tea == null || order == null || order.requirements == null || order.requirements.Count == 0)
+            return 0f;
+        float earned = 0;
+        float possible = 0;
+        foreach(var item in order.requirements)
+        {
+            int teaValue = tea.GetVibeValue(item.targetvibe);
+            float requirementScore = Mathf.Clamp01(teaValue / 5);
+            earned += requirementScore * item.weight;
+            possible += item.weight;
+        }
+        if (possible <= 0)
+            return 0;
+        return (earned / possible) * 100f;
+    }
+    public static int CalculatePayment(CustomerOrder order, float score)
+    {
+        float multiplier;
+        if (score >= 90)
+            multiplier = 2;
+        else if (score >= 75)
+            multiplier = 1.5f;
+        else if (score >= 50)
+            multiplier = 1;
+        else if (score >= 25)
+            multiplier = 0.5f;
+        else
+            multiplier = .25f;
+        return Mathf.RoundToInt(order.basePay * multiplier);
     }
 }

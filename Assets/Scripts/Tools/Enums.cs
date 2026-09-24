@@ -12,3 +12,11 @@ public enum timeScale
     hour,
     day
 }
+public enum CustomerState
+{
+    Arriving,
+    Ordering,
+    Waiting,
+    ReadyToServe,
+    Leaving
+}
