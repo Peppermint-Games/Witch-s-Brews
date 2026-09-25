@@ -1,13 +1,14 @@
 ﻿using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GardenManager : MonoBehaviour
 {
     public static GardenManager I;
     public List<PlantData> plantDatabase = new List<PlantData>();
     public gardenData thisData;
-    public List<Sprite> plantIcons = new List<Sprite>();
+    public List<Sprite> harvestIcons, growingIcons, bloomIcons;
     public List<PlantPlot> plots = new List<PlantPlot>();
     private void Awake()
     {
@@ -26,7 +27,9 @@ public class GardenManager : MonoBehaviour
         for (int i = 0; i < plantIcons.Count; i++)
         {
             PlantData newPlant = PlantDatabase.newPlant(i);
-            newPlant.icon = plantIcons[i];
+            newPlant.harvestSprite = harvestIcons[i];
+            newPlant.growSprite = growingIcons[i];
+            newPlant.bloomSprite = bloomIcons[i];
             plantDatabase.Add(newPlant);
         }
     }
@@ -94,4 +97,5 @@ public class PlantData
     public int growTime, yield, id, value;
     public vibe vibe;
     public timeScale scale = timeScale.day;
+    public Sprite harvestSprite, growSprite, bloomSprite
 }
