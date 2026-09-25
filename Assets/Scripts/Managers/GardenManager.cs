@@ -24,7 +24,7 @@ public class GardenManager : MonoBehaviour
     void BuildDatabase()
     {
         plantDatabase.Clear();
-        for (int i = 0; i < plantIcons.Count; i++)
+        for (int i = 0; i < harvestIcons.Count; i++)
         {
             PlantData newPlant = PlantDatabase.newPlant(i);
             newPlant.harvestSprite = harvestIcons[i];
@@ -97,5 +97,5 @@ public class PlantData
     public int growTime, yield, id, value;
     public vibe vibe;
     public timeScale scale = timeScale.day;
-    public Sprite harvestSprite, growSprite, bloomSprite
+    public Sprite harvestSprite, growSprite, bloomSprite;
 }

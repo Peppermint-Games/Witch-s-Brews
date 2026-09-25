@@ -192,20 +192,10 @@ public static class TeaScoring
 {
     public static float ScoreTea(Teabag tea, CustomerOrder order)
     {
-        if (tea == null || order == null || order.requirements == null || order.requirements.Count == 0)
-            return 0f;
-        float earned = 0;
-        float possible = 0;
-        foreach(var item in order.requirements)
-        {
-            int teaValue = tea.GetVibeValue(item.targetvibe);
-            float requirementScore = Mathf.Clamp01(teaValue / 5);
-            earned += requirementScore * item.weight;
-            possible += item.weight;
-        }
-        if (possible <= 0)
-            return 0;
-        return (earned / possible) * 100f;
+        if (tea == null || order == null) return 0f;
+        if (order.wantsSpecificTea)
+            return tea.id == order.requestedTeaID ? 100f : 0f;
+        return ScoreVibes(tea, order);
     }
     public static int CalculatePayment(CustomerOrder order, float score)
     {

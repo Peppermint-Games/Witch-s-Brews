@@ -11,9 +11,10 @@ public class PlantPlot : MonoBehaviour
     public Image thisImg;
     public Sprite plantPlotSprite;
     public PlotState state;
-    void Awake(){
-    state = PlotState.Empty;
-    thisImg.sprite = plantPlotSprite;
+    void Awake()
+    {
+        state = PlotState.Empty;
+        thisImg.sprite = plantPlotSprite;
     }
     private void OnMouseDown()
     {
@@ -23,12 +24,13 @@ public class PlantPlot : MonoBehaviour
         {
             UnlockPlot();
             return;
-        }{
-        if (saveData.harvestCount > 0)
-            GardenManager.I.HarvestPlant(this);
+        }
+        {
+            if (saveData.harvestCount > 0)
+                GardenManager.I.HarvestPlant(this);
             state = PlotState.Harvested;
             UpdateVisuals(true);
-            }
+        }
     }
     public void UnlockPlot()
     {
@@ -47,21 +49,21 @@ public class PlantPlot : MonoBehaviour
     }
     public void UpdateVisuals(bool harvested = false)
     {
-    if(!harvested)
-        if(saveDat.harvestCount > 0)
-        state = PlotState.Blooming;
-        else
-        state = PlotState.Growing;
-        }
-        switch(state){
+        if (!harvested)
+            if (saveData.harvestCount > 0)
+                state = PlotState.Blooming;
+            else
+                state = PlotState.Growing;
+        switch (state)
+        {
             case PlotState.Harvested:
-            thisImg.sprite = heldData.harvestSprite;
+                thisImg.sprite = heldData.harvestSprite;
                 break;
             case PlotState.Growing:
-            thisImg.sprite = heldData.growSprite;
+                thisImg.sprite = heldData.growSprite;
                 break;
             case PlotState.Blooming:
-            thisImg.sprite = heldData.bloomSprite;
+                thisImg.sprite = heldData.bloomSprite;
                 break;
         }
     }
