@@ -9,6 +9,12 @@ public class PlantPlot : MonoBehaviour
     public PlantData heldData;
     public Plantdat saveData;
     public Image thisImg;
+    public Sprite plantPlotSprite;
+    public PlotState state;
+    void Awake(){
+    state = PlotState.Empty;
+    thisImg.sprite = plantPlotSprite;
+    }
     private void OnMouseDown()
     {
         if (saveData == null)
@@ -17,9 +23,12 @@ public class PlantPlot : MonoBehaviour
         {
             UnlockPlot();
             return;
-        }
+        }{
         if (saveData.harvestCount > 0)
             GardenManager.I.HarvestPlant(this);
+            state = PlotState.Harvested;
+            UpdateVisuals(true);
+            }
     }
     public void UnlockPlot()
     {
@@ -36,9 +45,24 @@ public class PlantPlot : MonoBehaviour
         UpdateVisuals();
         GameManager.I.Save();
     }
-    public void UpdateVisuals()
+    public void UpdateVisuals(bool harvested = false)
     {
-        thisImg.sprite = heldData.icon;
-        thisImg.color = saveData.isUnlocked ? Color.white : Color.black;
+    if(!harvested)
+        if(saveDat.harvestCount > 0)
+        state = PlotState.Blooming;
+        else
+        state = PlotState.Growing;
+        }
+        switch(state){
+            case PlotState.Harvested:
+            thisImg.sprite = heldData.harvestSprite;
+                break;
+            case PlotState.Growing:
+            thisImg.sprite = heldData.growSprite;
+                break;
+            case PlotState.Blooming:
+            thisImg.sprite = heldData.bloomSprite;
+                break;
+        }
     }
 }
