@@ -20,3 +20,10 @@ public enum CustomerState
     ReadyToServe,
     Leaving
 }
+public enum PlotState
+{
+    Empty,
+    Harvested,
+    Growing,
+    Blooming
+}
