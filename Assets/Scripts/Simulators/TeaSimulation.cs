@@ -5,28 +5,30 @@
         if (save == null || save.data == null || save.data.tea == null || save.data.tea.kettles == null)
             return;
         foreach (var item in save.data.tea.kettles)
-            UpdateKettle(item, save.tickCount);
+            UpdateKettle(item, save.tickCount, save);
     }
-    static void UpdateKettle(Kettledat kettle, long currentTick)
+    static void UpdateKettle(Kettledat kettle, long currentTick, saveData save)
     {
-        if (!kettle.isUnlocked)
+        if (kettle == null || !kettle.isUnlocked || kettle.heldID < 0 || kettle.ready)
             return;
-        if (kettle.heldID < 0)
-            return;
-        if (kettle.ready)
-            return;
-        Teabag tea = TeaShopManager.I.GetTeaByID(kettle.heldID);
+        Teabag tea = TeaResolver.GetTeaByID(kettle.heldID, save);
         if (tea == null)
             return;
         long requiredTicks = GameManager.I.GetTicks(tea.growTime, tea.scale);
+        if (requiredTicks <= 0)
+            return;
         long elapsedTicks = currentTick - kettle.brewStartTick;
-        if(elapsedTicks >= requiredTicks)
-        {
-            kettle.ready = true;
-            GameManager.I.Save();
-            Kettle kettleObject = TeaShopManager.I.GetKettle(kettle.myPos);
-            if (kettleObject != null)
-                kettleObject.UpdateVisuals();
-        }
+        if (elapsedTicks < requiredTicks)
+            return;
+        kettle.ready = true;
+        RefreshKettleVisual(kettle);
+    }
+    static void RefreshKettleVisual(Kettledat data)
+    {
+        if (TeaShopManager.I == null)
+            return;
+        Kettle kettleObject = TeaShopManager.I.GetKettle(data.myPos);
+        if (kettleObject != null)
+            kettleObject.UpdateVisuals();
     }
 }

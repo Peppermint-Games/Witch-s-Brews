@@ -11,14 +11,14 @@ public static class SaveManager
     }
     public static saveData LoadData(saveData def)
     {
-        saveData newData = new saveData();
         if (!File.Exists(SavePath))
-            newData = def;
-        else
         {
-            string json = File.ReadAllText(SavePath);
-            newData = JsonUtility.FromJson<saveData>(json);
+            if (def != null)
+                return def;
+            return new saveData();
         }
-        return newData;
+        string json = File.ReadAllText(SavePath);
+        saveData newData = JsonUtility.FromJson<saveData>(json);
+        return newData ?? new saveData();
     }
 }

@@ -5,7 +5,7 @@ using UnityEngine;
 [Serializable]
 public class saveData
 {
-    public gameData data;
+    public gameData data = new gameData();
     public int gold, currentDay;
     public long tickCount;
 }
@@ -18,18 +18,19 @@ public class gameData
 [Serializable]
 public class gardenData
 {
-    public List<Plantdat> plants;
-    public List<plantInv> inventory;
+    public List<Plantdat> plants = new List<Plantdat>();
+    public List<plantInv> inventory = new List<plantInv>();
 }
 [Serializable]
 public class teaData
 {
     public recipeBook RBook = new recipeBook();
-    public List<Kettledat> kettles;
+    public List<Kettledat> kettles = new List<Kettledat>();
     public int nextCustomTeaID = 1000, nextRegularID = 0;
     public List<TeaInv> inventory = new List<TeaInv>();
     public List<SeatedCustomerData> seatedCustomers = new List<SeatedCustomerData>();
     public List<RegularData> regulars = new List<RegularData>();
+    public List<ChairData> chairs = new List<ChairData>();
 }
 [Serializable]
 public class Plantdat
@@ -42,7 +43,7 @@ public class Plantdat
 [Serializable]
 public class Kettledat
 {
-    public int heldID;
+    public int heldID = -1;
     public Vector2 myPos;
     public bool isUnlocked;
     public long brewStartTick;
@@ -56,7 +57,7 @@ public class plantInv
 [Serializable]
 public class recipeBook
 {
-    public List<SavedTeaRecipe> myRecipes;
+    public List<SavedTeaRecipe> myRecipes = new List<SavedTeaRecipe>();
 }
 [Serializable]
 public class SavedTeaRecipe
@@ -64,7 +65,7 @@ public class SavedTeaRecipe
     public string recipeKey, customName, description;
     public List<int> plantIDs = new List<int>();
     public int id;
-    public vibe teaVibe;
+    public List<VibeValue> vibes = new List<VibeValue>();
     public int growTime;
 }
 [Serializable]
@@ -133,6 +134,7 @@ public class SeatedCustomerData
     public int basePay;
     public bool isRegular;
     public int regularID = -1;
+    public string requestText;
 }
 [Serializable]
 public class RegularData
@@ -143,4 +145,10 @@ public class RegularData
     public List<vibe> preferredVibes = new List<vibe>();
     public int visits, successfulVisits;
     public float tipBonus = 0.25f;
+}
+[Serializable]
+public class ChairData
+{
+    public int chairID;
+    public bool isUnlocked;
 }

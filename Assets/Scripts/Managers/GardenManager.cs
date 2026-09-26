@@ -9,12 +9,14 @@ public class GardenManager : MonoBehaviour
     public List<PlantData> plantDatabase = new List<PlantData>();
     public gardenData thisData;
     public List<Sprite> harvestIcons, growingIcons, bloomIcons;
+    public Sprite emptyPlot;
     public List<PlantPlot> plots = new List<PlantPlot>();
     private void Awake()
     {
         I = this;
         BuildDatabase();
     }
+    private void OnDestroy() => I = null;
     private void Start()
     {
         GardenSimulation.UpdateThis(GameManager.I.save);
@@ -35,15 +37,37 @@ public class GardenManager : MonoBehaviour
     }
     void BuildGarden()
     {
-        foreach (var item in plots)
+        plots = FindObjectsOfType<PlantPlot>().OrderBy(x => x.transform.GetSiblingIndex()).ToList();
+        const int plantCount = 40;
+        const int plotsPerPlant = 5;
+        for(int plantID = 0; plantID < plantCount; plantID++)
         {
-            Plantdat data = thisData.plants.FirstOrDefault(x => x.myPos == item.myPos);
-            if (data == null)
-                continue;
-            item.saveData = data;
-            item.heldData = GetPlant(data.heldID);
-            item.UpdateVisuals();
+            for(int row = 0; row < plotsPerPlant; row++)
+            {
+                int index = (plantID * plotsPerPlant) + row;
+                if (index >= plots.Count)
+                    continue;
+                PlantPlot plot = plots[index];
+                plot.myPos = new Vector2(plantID, row);
+                Plantdat data = thisData.plants.FirstOrDefault(x => x.myPos == plot.myPos);
+                if(data == null)
+                {
+                    data = new Plantdat
+                    {
+                        myPos = plot.myPos,
+                        heldID = plantID,
+                        harvestCount = 0,
+                        isUnlocked = false,
+                        lastGrowthTick = GameManager.I.save.tickCount
+                    };
+                    thisData.plants.Add(data);
+                }
+                plot.saveData = data;
+                plot.heldData = GetPlant(data.heldID);
+                plot.UpdateVisuals();
+            }
         }
+        GameManager.I.Save();
     }
     public void HarvestPlant(PlantPlot plot)
     {
@@ -56,7 +80,7 @@ public class GardenManager : MonoBehaviour
         if (plot.saveData.harvestCount <= 0)
             return;
         plantInv inventoryItem = thisData.inventory.FirstOrDefault(x => x.plantID == plot.heldData.id);
-        if(inventoryItem == null)
+        if (inventoryItem == null)
         {
             inventoryItem = new plantInv();
             inventoryItem.plantID = plot.heldData.id;

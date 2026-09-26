@@ -1,9 +1,15 @@
 ﻿public enum vibe
 {
-    chill,
-    cozy,
-    spooky,
-    energetic
+    Energetic,
+    Chill,
+    Focused,
+    Comforting,
+    Happy,
+    Sleepy,
+    Romantic,
+    Creative,
+    Confident,
+    Refreshed
 }
 public enum timeScale
 {

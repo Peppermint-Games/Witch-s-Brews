@@ -3,17 +3,20 @@
     public static void UpdateThis(saveData save)
     {
         if (save == null || save.data == null || save.data.garden.plants == null)
-            foreach (var item in save.data.garden.plants)
-                UpdatePlant(item, save.tickCount);
+            return;
+        foreach (var item in save.data.garden.plants)
+            UpdatePlant(item, save.tickCount);
     }
     static void UpdatePlant(Plantdat plant, long currentTick)
     {
         if (plant == null || !plant.isUnlocked)
             return;
         PlantData def = PlantDatabase.newPlant(plant.heldID);
+        if (def == null)
+            return;
         long growthDuration = GameManager.I.GetTicks(def.growTime, def.scale);
         long ticksPassed = currentTick - plant.lastGrowthTick;
-        if (def == null || growthDuration <=0 || ticksPassed < growthDuration)
+        if (growthDuration <= 0 || ticksPassed < growthDuration)
             return;
         long completedCycles = ticksPassed / growthDuration;
         plant.harvestCount += (int)completedCycles * def.yield;
