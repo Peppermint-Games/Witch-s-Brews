@@ -7,9 +7,15 @@ public class CustomerChair : MonoBehaviour
     public ChairData data;
     public int chairID;
     public Transform customerPosition;
+    [System.NonSerialized]
     public Customer heldCustomer;
-    public bool isUnlocked => data != null && data.isUnlocked;
-    public bool isOccupied => heldCustomer != null;
+    public bool isUnlocked { get { return data != null && data.isUnlocked; } }
+    public bool isOccupied { get { return heldCustomer != null; } }
+    private void Awake()
+    {
+        customerPosition = this.transform;
+        heldCustomer = null;
+    }
     public bool SeatCustomer(Customer customer)
     {
         if (customer == null || data == null || isOccupied || !isUnlocked)
@@ -54,5 +60,4 @@ public class CustomerChair : MonoBehaviour
         UpdateVisuals();
         GameManager.I.Save();
     }
-    public void OnMouseDown() => UIManager.I.CallContextUI(this);
 }

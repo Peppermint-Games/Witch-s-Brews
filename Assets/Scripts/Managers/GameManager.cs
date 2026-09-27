@@ -6,10 +6,8 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager I;
     public int tickRate = 20;
-    public const int ticksPerDay = 12000;
-    public float TicksPerHour => ticksPerDay / 24;
-    public float TicksPerMinute => TicksPerHour / 60f;
-    public float TicksPerSecond => TicksPerMinute / 60;
+    public const int ticksPerDay = 2400;
+    public float TicksPerMinute { get { return ticksPerDay / (24f * 60f); } }
     public saveData save;
     private void Awake()
     {
@@ -20,6 +18,21 @@ public class GameManager : MonoBehaviour
         }
         I = this;
         DontDestroyOnLoad(gameObject);
+        save = GetDefaultSave();
+    }
+    saveData GetDefaultSave()
+    {
+        saveData dat = new saveData();
+        dat.data = new gameData();
+        dat.gold = 100;
+        dat.currentDay = 0;
+        dat.tickCount = 0;
+        for (int i = 0; i < 20; i++) dat.data.tea.inventory.Add(new TeaInv { teaID = i, count = 3 });
+        for (int i = 0; i < 40; i++) dat.data.garden.inventory.Add(new plantInv { plantID = i, count = 2 });
+        return dat;
+    }
+    public void LoadGame()
+    {
         Load();
         InvokeRepeating(nameof(Tick), 0, (1f / tickRate));
     }
@@ -35,25 +48,30 @@ public class GameManager : MonoBehaviour
             Save();
         }
     }
-    public long GetTicks(float amount, timeScale scale)
+    public long GetTicks(
+   float amount,
+   timeScale scale)
     {
         float ticks = 0f;
+
         switch (scale)
         {
-            case timeScale.second:
-                ticks = TicksPerSecond * amount;
-                break;
             case timeScale.minute:
-                ticks = TicksPerMinute * amount;
+                ticks =
+                    TicksPerMinute *
+                    amount;
                 break;
-            case timeScale.hour:
-                ticks = TicksPerHour * amount;
-                break;
+
             case timeScale.day:
-                ticks = ticksPerDay * amount;
+                ticks =
+                    ticksPerDay *
+                    amount;
                 break;
         }
-        return (long)Mathf.RoundToInt(ticks);
+
+        return (long)Mathf.RoundToInt(
+            ticks
+        );
     }
     public void Load() => save = SaveManager.LoadData(save);
     public void Save() => SaveManager.SaveData(save);

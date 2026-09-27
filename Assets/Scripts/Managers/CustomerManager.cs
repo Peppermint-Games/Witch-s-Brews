@@ -10,11 +10,12 @@ public class CustomerManager : MonoBehaviour
     private void Awake()
     {
         I = this;
+        keywords = KeywordDatabase.BuildDatabase();
+        customerNames = CustomerNameDatabase.BuildDatabase();
     }
     private void OnDestroy() => I = null;
-    public List<string> customerNames = new List<string>();
-    public List<OrderKeyword> keywords = new List<OrderKeyword>();
-    public Customer currentCustomer;
+    List<string> customerNames = new List<string>();
+    List<OrderKeyword> keywords = new List<OrderKeyword>();
     public Customer GenerateCustomer()
     {
         List<RegularData> regulars = GameManager.I.save.data.tea.regulars;
@@ -24,8 +25,6 @@ public class CustomerManager : MonoBehaviour
         else
             customer = GenerateNewCustomer();
         customer.state = CustomerState.Ordering;
-        currentCustomer = customer;
-        SetupCustomerUI();
         return customer;
     }
     public Customer GenerateNewCustomer()
@@ -33,7 +32,6 @@ public class CustomerManager : MonoBehaviour
         Customer customer = new Customer();
         customer.customerName = customerNames[Random.Range(0, customerNames.Count)];
         customer.order = GenerateOrder();
-        currentCustomer = customer;
         return customer;
     }
     Customer GenerateRegular()
@@ -74,47 +72,122 @@ public class CustomerManager : MonoBehaviour
     }
     CustomerOrder GenerateVibeOrder()
     {
-        CustomerOrder order = new CustomerOrder();
+        CustomerOrder order =
+            new CustomerOrder();
+
         order.wantsSpecificTea = false;
         order.requestedTeaID = -1;
         order.basePay = 5;
-        if (keywords == null || keywords.Count == 0)
+
+        if (keywords == null ||
+            keywords.Count == 0)
         {
-            order.requestText = "Surprise me";
+            order.requestText =
+                "Surprise me.";
+
             return order;
         }
-        int requirementCount = Random.Range(1, 3);
-        List<OrderKeyword> available = new List<OrderKeyword>(keywords);
-        List<string> requestParts = new List<string>();
-        for(int i = 0; i < requirementCount; i++)
+
+        List<string> requestParts =
+            new List<string>();
+
+        // Pick our primary request.
+        OrderKeyword primary =
+            keywords[
+                Random.Range(
+                    0,
+                    keywords.Count
+                )
+            ];
+
+        AddRequirement(
+            order,
+            primary
+        );
+
+        requestParts.Add(
+            primary.text
+        );
+
+        // 50% chance of having a second requirement.
+        if (Random.value < 0.5f)
         {
-            if (available.Count == 0)
-                break;
-            int index = Random.Range(0, available.Count);
-            OrderKeyword keyword = available[index];
-            available.RemoveAt(index);
-            if (keyword == null)
-                continue;
-            requestParts.Add(keyword.text);
-            VibeRequirement existing = order.requirements.Find(x => x.targetvibe == keyword.targetVibe);
-            if (existing != null)
-                existing.weight += keyword.weight;
-            else
-                order.requirements.Add(new VibeRequirement { targetvibe = keyword.targetVibe, weight = keyword.weight });
+            List<OrderKeyword> secondaryOptions =
+                keywords.FindAll(
+                    x =>
+                        x != null &&
+                        x != primary
+                );
+
+            if (secondaryOptions.Count > 0)
+            {
+                OrderKeyword secondary =
+                    secondaryOptions[
+                        Random.Range(
+                            0,
+                            secondaryOptions.Count
+                        )
+                    ];
+
+                AddRequirement(
+                    order,
+                    secondary
+                );
+
+                requestParts.Add(
+                    secondary.text
+                );
+            }
         }
-        order.requestText = string.Join(" ", requestParts);
+
+        order.requestText =
+            string.Join(
+                " ",
+                requestParts
+            );
+
         return order;
+    }
+
+    void AddRequirement(
+        CustomerOrder order,
+        OrderKeyword keyword)
+    {
+        if (order == null ||
+            keyword == null)
+            return;
+
+        VibeRequirement existing =
+            order.requirements.Find(
+                x =>
+                    x.targetvibe ==
+                    keyword.targetVibe
+            );
+
+        if (existing != null)
+        {
+            existing.weight +=
+                keyword.weight;
+        }
+        else
+        {
+            order.requirements.Add(
+                new VibeRequirement
+                {
+                    targetvibe =
+                        keyword.targetVibe,
+
+                    weight =
+                        keyword.weight
+                }
+            );
+        }
     }
     RegularData GetRegular(int id)
     {
         if (GameManager.I == null || GameManager.I.save == null || GameManager.I.save.data == null || GameManager.I.save.data.tea == null || GameManager.I.save.data.tea.regulars == null)
             return null;
         return GameManager.I.save.data.tea.regulars.Find(x => x.id == id);
-    }
-    public void SetupCustomerUI()
-    {
-        if (currentCustomer == null)
-            return;
     }
     int CalculateTip(Customer customer, float score)
     {
@@ -158,5 +231,60 @@ public class CustomerManager : MonoBehaviour
         customer.isRegular = true;
         customer.regularID = regular.id;
         GameManager.I.Save();
+    }
+    public int ProcessSuccessfulVisit(
+   Customer customer,
+   Teabag servedTea,
+   float score)
+    {
+        if (customer == null ||
+            servedTea == null)
+            return 0;
+
+        // Existing regular.
+        if (customer.isRegular)
+        {
+            RegularData regular =
+                GetRegular(
+                    customer.regularID
+                );
+
+            if (regular == null)
+                return 0;
+
+            // Treat 75+ as a successful visit.
+            if (score >= 75f)
+            {
+                regular.successfulVisits++;
+
+                if (!regular.preferredTeaIDs
+                    .Contains(servedTea.id))
+                {
+                    regular.preferredTeaIDs
+                        .Add(servedTea.id);
+                }
+
+                if (!regular.preferredVibes
+                    .Contains(servedTea.teaVibe))
+                {
+                    regular.preferredVibes
+                        .Add(servedTea.teaVibe);
+                }
+            }
+
+            return CalculateTip(
+                customer,
+                score
+            );
+        }
+
+        // New customers have a chance to become regulars.
+        TryCreateRegular(
+            customer,
+            servedTea,
+            score
+        );
+
+        return 0;
     }
 }

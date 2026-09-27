@@ -6,9 +6,12 @@ using UnityEngine;
 public class SeatingManager : MonoBehaviour
 {
     public static SeatingManager I;
+    public bool isDemo;
     private void Awake()
     {
         I = this;
+        if (chairs.Count <= 0)
+            chairs = new List<CustomerChair>(FindObjectsOfType<CustomerChair>());
     }
     public List<CustomerChair> chairs = new List<CustomerChair>();
     private void Start()
@@ -19,7 +22,8 @@ public class SeatingManager : MonoBehaviour
     private void OnDestroy() => I = null;
     void LoadSeatedCustomers()
     {
-        List<SeatedCustomerData> saved = GameManager.I.save.data.tea.seatedCustomers;
+        List<SeatedCustomerData> saved =GameManager.I.save.data.tea.seatedCustomers;
+        Debug.Log(saved.Count);
         foreach (var item in saved)
         {
             CustomerChair chair = chairs.FirstOrDefault(x => x.chairID == item.chairID);
@@ -43,6 +47,14 @@ public class SeatingManager : MonoBehaviour
             };
             chair.heldCustomer = customer;
             chair.UpdateVisuals();
+            if (CustomerQueueManager.I != null)
+            {
+                CustomerQueueManager.I
+                    .RegisterSeatedCustomer(
+                        customer,
+                        chair
+                    );
+            }
         }
     }
     void BuildChairs()
@@ -53,33 +65,65 @@ public class SeatingManager : MonoBehaviour
             if (item == null)
                 continue;
             ChairData saved = tea.chairs.FirstOrDefault(x => x.chairID == item.chairID);
-            if(saved == null)
+            if (saved == null)
             {
-                saved = new ChairData { chairID = item.chairID, isUnlocked = false };
+                saved = new ChairData { chairID = item.chairID, isUnlocked = isDemo ? true : false };
                 tea.chairs.Add(saved);
             }
+            //Temp override chairs
+            saved.isUnlocked = true;
             item.data = saved;
             item.UpdateVisuals();
         }
     }
     public bool HasFreeSeat()
     {
-        return chairs.Any(x => !x.isOccupied && x.isUnlocked);
+        foreach (CustomerChair chair in chairs)
+        {
+            if (chair == null)
+                continue;
+
+            Debug.Log(
+                "CHAIR " + chair.chairID +
+                " | occupied = " + chair.isOccupied +
+                " | heldCustomer null = " +
+                (chair.heldCustomer == null)
+            );
+        }
+
+        return chairs.Any(
+            x =>
+                x != null &&
+                !x.isOccupied &&
+                x.isUnlocked
+        );
     }
     public CustomerChair GetFreeSeat()
     {
         return chairs.FirstOrDefault(x => !x.isOccupied && x.isUnlocked);
     }
-    public bool SeatCustomer(Customer customer)
+    public bool SeatCustomer(Customer customer, CustomerChair chair)
     {
-        CustomerChair chair = GetFreeSeat();
-        if (chair == null)
+        if (customer == null || chair == null)
             return false;
+
         bool success = chair.SeatCustomer(customer);
+
         if (!success)
             return false;
+
         SaveSeatedCustomer(customer, chair.chairID);
+
         return true;
+    }
+    public void RemoveCustomerForExit(int chairID)
+    {
+        CustomerChair chair = chairs.FirstOrDefault(x => x.chairID == chairID);
+        if (chair == null)
+            return;
+        chair.RemoveCustomer();
+        RemoveSavedCustomer(chairID);
+        GameManager.I.Save();
     }
     public Customer PullCustomer(int chairID)
     {
@@ -122,35 +166,22 @@ public class SeatingManager : MonoBehaviour
     {
         GameManager.I.save.data.tea.seatedCustomers.RemoveAll(x => x.chairID == chairID);
     }
-    public void MakeCustomerWait()
-    {
-        Customer customer = CustomerManager.I.currentCustomer;
-        if (customer == null)
-            return;
-        bool seated = SeatingManager.I.SeatCustomer(customer);
-        if (!seated)
-            return;
-        CustomerManager.I.currentCustomer = null;
-        CustomerManager.I.GenerateCustomer();
-    }
-    public void DismissCurrentCustomer()
-    {
-        Customer customer = CustomerManager.I.currentCustomer;
-        if (customer == null)
-            return;
-        customer.state = CustomerState.Leaving;
-        CustomerManager.I.currentCustomer = null;
-        CustomerManager.I.GenerateCustomer();
-    }
     public void CallCustomerFromSeat(int chairID)
     {
-        if (CustomerManager.I.currentCustomer != null)
+        if (CustomerQueueManager.I == null)
             return;
-        Customer customer = SeatingManager.I.PullCustomer(chairID);
+        if (!CustomerQueueManager.I.HasSpaceForChairCustomer())
+            return;
+        CustomerChair oldChair = chairs.FirstOrDefault(x => x.chairID == chairID);
+        Customer customer = PullCustomer(chairID);
         if (customer == null)
             return;
-        CustomerManager.I.currentCustomer = customer;
-        customer.state = CustomerState.ReadyToServe;
-        CustomerManager.I.SetupCustomerUI();
+        bool success = CustomerQueueManager.I.ReturnFromChair(customer);
+        if (!success && oldChair != null)
+        {
+            SeatCustomer(customer, oldChair);
+            return;
+        }
+        GameManager.I.Save();
     }
 }

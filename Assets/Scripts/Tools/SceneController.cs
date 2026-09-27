@@ -5,22 +5,20 @@ using UnityEngine.SceneManagement;
 
 public class SceneController : MonoBehaviour
 {
-    public static SceneController I;
+    public static SceneController I; 
     private void Awake()
     {
+        if (I != null && I != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
         I = this;
+        DontDestroyOnLoad(gameObject);
     }
-    public string teashopScene, gardenScene;
-    public void GoToGarden() => StartCoroutine(SwitchArea(teashopScene, gardenScene));
-    public void GoToTeaShop() => StartCoroutine(SwitchArea(gardenScene, teashopScene));
-    IEnumerator SwitchArea(string unloadScene, string loadScene)
-    {
-        Scene oldScene = SceneManager.GetSceneByName(unloadScene);
-        if (oldScene.isLoaded)
-            yield return SceneManager.UnloadSceneAsync(unloadScene);
-        Scene newScene = SceneManager.GetSceneByName(loadScene);
-        if (!newScene.isLoaded)
-            yield return SceneManager.LoadSceneAsync(loadScene, LoadSceneMode.Additive);
-        SceneManager.SetActiveScene(SceneManager.GetSceneByName(loadScene));
-    }
+    public string teashopScene, gardenScene, menuScene, tutorialScene;
+    public void GoToGarden() => SceneManager.LoadScene(gardenScene);
+    public void GoToTeaShop() => SceneManager.LoadScene(teashopScene);
+    public void StartTutorial() => SceneManager.LoadScene(tutorialScene);
+    public void StartGame() => SceneManager.LoadScene(gardenScene);
 }

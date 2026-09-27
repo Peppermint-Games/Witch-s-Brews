@@ -28,6 +28,7 @@ public class teaData
     public List<Kettledat> kettles = new List<Kettledat>();
     public int nextCustomTeaID = 1000, nextRegularID = 0;
     public List<TeaInv> inventory = new List<TeaInv>();
+    public List<TeaInv> brewedInventory = new List<TeaInv>();
     public List<SeatedCustomerData> seatedCustomers = new List<SeatedCustomerData>();
     public List<RegularData> regulars = new List<RegularData>();
     public List<ChairData> chairs = new List<ChairData>();
@@ -109,19 +110,6 @@ public class VibeValue
 {
     public vibe type;
     public int value;
-}
-[Serializable]
-public class VibeModifier
-{
-    public vibe type;
-    public int weight;
-}
-[Serializable]
-public class OrderKeyWord
-{
-    [TextArea]
-    public string text;
-    public List<VibeModifier> modifiers = new List<VibeModifier>();
 }
 [Serializable]
 public class SeatedCustomerData

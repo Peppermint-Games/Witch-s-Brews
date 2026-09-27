@@ -7,10 +7,13 @@ public class GardenManager : MonoBehaviour
 {
     public static GardenManager I;
     public List<PlantData> plantDatabase = new List<PlantData>();
+    [HideInInspector]
     public gardenData thisData;
-    public List<Sprite> harvestIcons, growingIcons, bloomIcons;
-    public Sprite emptyPlot;
+    public List<Sprite> bloomIcons;
+    public Sprite harvestIcon, growingIcon;
+    [HideInInspector]
     public List<PlantPlot> plots = new List<PlantPlot>();
+    public Text dayCount, CashCount;
     private void Awake()
     {
         I = this;
@@ -23,14 +26,24 @@ public class GardenManager : MonoBehaviour
         thisData = GameManager.I.save.data.garden;
         BuildGarden();
     }
+    private void Update()
+    {
+        dayCount.text = "Day: " + GameManager.I.save.currentDay;
+        CashCount.text = GameManager.I.save.gold.ToString();
+    }
+    public void HarvestAll()
+    {
+        foreach (var item in plots)
+            item.HarvestPlot();
+    }
     void BuildDatabase()
     {
         plantDatabase.Clear();
-        for (int i = 0; i < harvestIcons.Count; i++)
+        for (int i = 0; i < bloomIcons.Count; i++)
         {
             PlantData newPlant = PlantDatabase.newPlant(i);
-            newPlant.harvestSprite = harvestIcons[i];
-            newPlant.growSprite = growingIcons[i];
+            newPlant.harvestSprite = harvestIcon;
+            newPlant.growSprite = growingIcon;
             newPlant.bloomSprite = bloomIcons[i];
             plantDatabase.Add(newPlant);
         }
@@ -111,6 +124,7 @@ public class GardenManager : MonoBehaviour
         int count = getUnlockedCount();
         return count * count * count;
     }
+    public void GoToShop() => SceneController.I.GoToTeaShop();
 }
 public class PlantData
 {

@@ -16,6 +16,7 @@ public class PlantPlot : MonoBehaviour
         state = PlotState.Empty;
         if (thisImg == null)
             thisImg = GetComponent<Image>();
+        Destroy(GetComponentInChildren<Text>());
     }
     private void Start()
     {
@@ -49,7 +50,7 @@ public class PlantPlot : MonoBehaviour
     {
         if (!saveData.isUnlocked)
         {
-            thisImg.sprite = GardenManager.I.emptyPlot;
+            thisImg.sprite = plantPlotSprite;
             return;
         }
         if (!harvested)

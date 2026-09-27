@@ -33,3 +33,9 @@ public enum PlotState
     Growing,
     Blooming
 }
+public enum CustomerQueue
+{
+
+    A,
+    B
+}

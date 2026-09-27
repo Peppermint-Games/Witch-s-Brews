@@ -17,6 +17,8 @@ public class TeaShopManager : MonoBehaviour
     public List<Sprite> vibeIcons = new List<Sprite>();
     public teaData thisData;
     public List<Kettle> kettles = new List<Kettle>();
+    public Text dayCount, CashCount;
+    public bool isDemo;
     void BuildDatabase()
     {
         teaDatabase.Clear();
@@ -35,13 +37,31 @@ public class TeaShopManager : MonoBehaviour
         thisData = GameManager.I.save.data.tea;
         BuildKettles();
     }
+    private void Update()
+    {
+        dayCount.text = "Day: " + GameManager.I.save.currentDay;
+        CashCount.text = GameManager.I.save.gold.ToString();
+    }
+    public void GoToGarden() => SceneController.I.GoToGarden();
     void BuildKettles()
     {
         foreach (var item in kettles)
         {
+            if (item == null)
+                continue;
             Kettledat data = thisData.kettles.FirstOrDefault(x => x.myPos == item.myPos);
             if (data == null)
-                continue;
+            {
+                data = new Kettledat
+                {
+                    myPos = item.myPos,
+                    heldID = -1,
+                    brewStartTick = 0,
+                    ready = false,
+                    isUnlocked = isDemo ? true : item.myPos == new Vector2(0,1)
+                };
+                thisData.kettles.Add(data);
+            }
             item.saveData = data;
             if (data.heldID >= 0)
                 item.heldData = GetTeaByID(data.heldID);
@@ -49,6 +69,7 @@ public class TeaShopManager : MonoBehaviour
                 item.heldData = null;
             item.UpdateVisuals();
         }
+        GameManager.I.Save();
     }
     public Teabag GetRecipe(List<PlantData> plants)
     {
@@ -125,7 +146,7 @@ public class TeaShopManager : MonoBehaviour
     {
         return kettles.FirstOrDefault(x => x.myPos == position);
     }
-    Teabag ConvertSavedRecipe(SavedTeaRecipe saved)
+    public Teabag ConvertSavedRecipe(SavedTeaRecipe saved)
     {
         if (saved == null)
             return null;
@@ -141,7 +162,10 @@ public class TeaShopManager : MonoBehaviour
             isPremade = false
         };
         if (tea.vibes.Count > 0)
+        {
             tea.teaVibe = tea.vibes.OrderByDescending(x => x.value).First().type;
+            tea.icon = GetVibeIcon(tea.teaVibe);
+        }
         return tea;
     }
     List<VibeValue> CalculateVibes(List<PlantData> plants)
@@ -167,9 +191,11 @@ public class TeaShopManager : MonoBehaviour
             return;
         float score = TeaScoring.ScoreTea(tea, customer.order);
         int payment = TeaScoring.CalculatePayment(customer.order, score);
-        GameManager.I.save.gold += payment;
+        int tip = 0;
+        if (CustomerManager.I != null)
+            tip = CustomerManager.I.ProcessSuccessfulVisit(customer, tea, score);
+        GameManager.I.save.gold += payment + tip;
         GameManager.I.Save();
-        CustomerManager.I.GenerateCustomer();
     }
     public Sprite GetVibeIcon(vibe teaVibe)
     {
@@ -197,7 +223,7 @@ public class TeaShopManager : MonoBehaviour
         }
         return true;
     }
-    void RemovePlants(List<int> plantIDs)
+    public void RemovePlants(List<int> plantIDs)
     {
         gardenData garden = GameManager.I.save.data.garden;
         foreach (var group in plantIDs.GroupBy(x => x))
@@ -209,35 +235,124 @@ public class TeaShopManager : MonoBehaviour
             if (item.count <= 0) garden.inventory.Remove(item);
         }
     }
-    public bool BrewTea(Kettle kettle, List<int> plantIDs)
+    public int GetTeabagCount(int teaID)
     {
-        if (kettle == null || kettle.saveData == null || !kettle.saveData.isUnlocked || !kettle.IsEmpty || plantIDs == null || plantIDs.Count != 4 || !HasPlants(plantIDs))
+        if (thisData == null || thisData.inventory == null)
+            return 0;
+        TeaInv item =
+            thisData.inventory.FirstOrDefault(x => x.teaID == teaID);
+        return item != null ? item.count : 0;
+    }
+    public bool RemoveTeabag(int teaID, int amount = 1)
+    {
+        if (thisData == null || thisData.inventory == null || amount <= 0)
             return false;
-        List<PlantData> plants = new List<PlantData>();
-        foreach(var item in plantIDs)
-        {
-            PlantData plant = PlantDatabase.newPlant(item);
-            if (plant == null)
-                return false;
-            plants.Add(plant);
-        }
-        Teabag tea = CreateTea(plants);
-        if (tea == null)
+        TeaInv item = thisData.inventory.FirstOrDefault(x => x.teaID == teaID);
+        if (item == null || item.count < amount)
             return false;
-        bool started = kettle.StartBrew(tea);
-        if (!started)
-            return false;
-        RemovePlants(plantIDs);
-        GameManager.I.Save();
+        item.count -= amount;
+        if (item.count <= 0)
+            thisData.inventory.Remove(item);
         return true;
     }
-    public void TestBrew()
+    public bool BrewTea(Kettle kettle, int teaID)
     {
-        if (kettles.Count == 0)
-            return;
-        List<int> testIngredients = new List<int>{ 2, 3, 4, 5 };
-        bool success = BrewTea(kettles[0], testIngredients);
-        Debug.Log("success");
+        if (kettle == null)
+        {
+            Debug.LogWarning("BrewTea failed: kettle is null.");
+            return false;
+        }
+
+        if (kettle.saveData == null)
+        {
+            Debug.LogWarning("BrewTea failed: kettle saveData is null.");
+            return false;
+        }
+
+        if (!kettle.IsEmpty())
+        {
+            Debug.LogWarning("BrewTea failed: kettle is not empty.");
+            return false;
+        }
+
+        int owned =
+            GetTeabagCount(teaID);
+
+        if (owned <= 0)
+        {
+            Debug.LogWarning(
+                "BrewTea failed: no teabags owned for ID " +
+                teaID
+            );
+
+            return false;
+        }
+
+        Teabag tea =
+            GetTeaByID(teaID);
+
+        if (tea == null)
+        {
+            Debug.LogWarning(
+                "BrewTea failed: tea ID " +
+                teaID +
+                " could not be found."
+            );
+
+            return false;
+        }
+
+        if (!kettle.StartBrew(tea))
+        {
+            Debug.LogWarning(
+                "BrewTea failed: StartBrew returned false."
+            );
+
+            return false;
+        }
+
+        if (!RemoveTeabag(teaID, 1))
+        {
+            Debug.LogWarning(
+                "BrewTea failed: could not remove teabag."
+            );
+
+            return false;
+        }
+
+        GameManager.I.Save();
+
+        Debug.Log(
+            "Started brewing " +
+            tea.teaName
+        );
+
+        return true;
+    }
+    public void AddBrewedTea(int teaID, int amount)
+    {
+        TeaInv existing = thisData.brewedInventory.FirstOrDefault(x => x.teaID == teaID);
+        if (existing != null)
+            existing.count += amount;
+        else
+            thisData.brewedInventory.Add(new TeaInv { teaID = teaID, count = amount });
+        GameManager.I.Save();
+    }
+    public int GetBrewedTeaCount(int teaID)
+    {
+        TeaInv item = thisData.brewedInventory.FirstOrDefault(x => x.teaID == teaID);
+        return item != null ? item.count : 0;
+    }
+    public bool RemoveBrewedTea(int teaID, int amount = 1)
+    {
+        TeaInv item = thisData.brewedInventory.FirstOrDefault(x => x.teaID == teaID);
+        if (item == null || item.count < amount)
+            return false;
+        item.count -= amount;
+        if (item.count <= 0)
+            thisData.brewedInventory.Remove(item);
+        GameManager.I.Save();
+        return true;
     }
 }
 public class Teabag
@@ -256,6 +371,17 @@ public class Teabag
     {
         VibeValue result = vibes.FirstOrDefault(x => x.type == type);
         return result != null ? result.value : 0;
+    }
+    public int GetValue()
+    {
+        int total = 0;
+        foreach (var item in ingredients)
+        {
+            PlantData plant = PlantDatabase.newPlant(item);
+            if (plant != null)
+                total += plant.value;
+        }
+        return total;
     }
 }
 public static class TeaRecipeUtility

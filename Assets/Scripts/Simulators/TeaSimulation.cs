@@ -9,7 +9,7 @@
     }
     static void UpdateKettle(Kettledat kettle, long currentTick, saveData save)
     {
-        if (kettle == null || !kettle.isUnlocked || kettle.heldID < 0 || kettle.ready)
+        if (kettle == null || kettle.heldID < 0 || kettle.ready)
             return;
         Teabag tea = TeaResolver.GetTeaByID(kettle.heldID, save);
         if (tea == null)
